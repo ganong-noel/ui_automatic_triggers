@@ -1,2 +1,2 @@
-analysis/input/simulation_covid_dataset_fullcps_collaposed_states.dta filter=lfs diff=lfs merge=lfs -text
+analysis/input/simulation_covid_fullcps_collaposed_states.dta filter=lfs diff=lfs merge=lfs -text
 test.txt filter=lfs diff=lfs merge=lfs -text
