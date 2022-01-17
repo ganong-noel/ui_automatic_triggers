@@ -1,0 +1,6 @@
+
+data_path:
+  cps: "~/GitHub/data_cps/data/"
+  SIPP: "~/GitHub/data_SIPP/data"
+
+lab_code: "../lab_code/"
