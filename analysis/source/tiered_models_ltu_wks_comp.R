@@ -19,7 +19,7 @@ raw_sim_unemp <- read_dta("analysis/input/simulation_covid_fullcps_collapsed_sta
 
 source("../lab_code/prelim.R")
 
-# source("analysis/source/tiered_models_creation.R")
+source("analysis/source/tiered_models_creation.R")
 #
 # Only source this is you want to recreate the csv files that have the raw data
 # about the tiered models created in tiered_models_creation.Rmd stored in

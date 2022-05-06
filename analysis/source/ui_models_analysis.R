@@ -1,7 +1,7 @@
 library(stargazer)
 library("RColorBrewer")
 library(patchwork)
-library(gridtext)
+#library(gridtext)
 library(grid)
 
 setwd("~/repo/ui_automatic_triggers")
@@ -219,21 +219,21 @@ dist_plot_sahm_0.5_ext <- dist_plot_pos(false_pos_sahm_0.5_ext) +
 
 # DIST PLOT PANNEL -----------------------------------------------
 
-bottom <- grid.text("Excess unemployment in 6 months (p.p)",
-                    gp = gpar(fontsize = 10, fontfamily = "serif"))
-
-all_plots <- dist_plot_baseline_ext +
-  dist_plot_sahm_1_ext + dist_plot_sahm_0.5_ext
-
-all_plots / bottom +
-  plot_layout(heights = c(100, 1))
-
-ggsave(
-  "analysis/release/false_pos_plot_pannel_ext.png",
-  width = 8,
-  height = 3.5,
-  unit = "in"
-)
+# bottom <- grid.text("Excess unemployment in 6 months (p.p)",
+#                     gp = gpar(fontsize = 10, fontfamily = "serif"))
+# 
+# all_plots <- dist_plot_baseline_ext +
+#   dist_plot_sahm_1_ext + dist_plot_sahm_0.5_ext
+# 
+# all_plots / bottom +
+#   plot_layout(heights = c(100, 1))
+# 
+# ggsave(
+#   "analysis/release/false_pos_plot_pannel_ext.png",
+#   width = 8,
+#   height = 3.5,
+#   unit = "in"
+# )
 
 # LTU CLAIMED VS UNCOVERED WKS,  TUR,  AND V/U TABLE ----------------------
 
