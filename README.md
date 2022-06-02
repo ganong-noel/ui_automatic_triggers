@@ -1,6 +1,11 @@
-To replicate the results in the paper only the master script `master.R` needs to be run. The sourcing of `source/tiered_models_creation.R` in `source/tiered_models_ltu_wks_comp.R` is commented out to avoid exessive computing time. If `source/tiered_models_creation.R` is run then the compilation time could exceed more than a day.
+To replicate the results in the paper only the master script `master.R` needs to be run. 
 
-The master script calls `source/ui_models_analysis.R` which in turn calls `source/threshold_dates_models.R` and `source/tiered_models_ltu_wks_comp.R`. If the tiered models are rebuilded then `source/tiered_models_creation.R` is run.
+The master script calls `source/ui_models_analysis.R` which in turn calls
+* `source/threshold_dates_models.R`
+* `source/tiered_models_ltu_wks_comp.R`
+* If the tiered models are rebuilt then `source/tiered_models_creation.R` is run.
+
+The sourcing of `source/tiered_models_creation.R` in `source/tiered_models_ltu_wks_comp.R` is commented out to avoid excessive computing time. If `source/tiered_models_creation.R` is run then the compilation time could exceed more than a day.
 
 The four scripts use the following inputs from the folder `input`:
 - `crck_ui_macro_dataset_weekly.dta` based on Chodorow-Reich, Coglianese, and Karabarbounis, QJE 2019
