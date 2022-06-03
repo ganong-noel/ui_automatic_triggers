@@ -15,7 +15,8 @@ sahm <- read.csv("analysis/input/SAHMREALTIME.csv")
 state_emp <- read.csv("analysis/input/realtime-TUR.csv")
 state_lab <- read_xlsx("analysis/input/ststdsadata.xlsx")
 state_jolts_raw <- read_dta("analysis/input/state-jolts.dta")
-raw_sim_unemp <- read_dta("analysis/input/simulation_covid_fullcps_collapsed_states.dta")
+raw_sim_unemp <-
+  read_dta("analysis/input/simulation_covid_fullcps_collapsed_states.dta")
 
 source("../lab_code/prelim.R")
 
@@ -74,7 +75,7 @@ historical_raw <-
 
 # CLEANING INPUT DATA -----------------------------------------------------
 
-sahm$DATE <- gsub('.{3}$', '', sahm$DATE)
+sahm$DATE <- gsub(".{3}$", "", sahm$DATE)
 sahm <- separate(sahm, DATE, c("year", "month"), sep = "-") %>%
   rename(sahm = SAHMREALTIME)
 
@@ -91,7 +92,8 @@ state_emp <-
 
 state_lab <- state_lab %>%
   rename(
-    fip = "States and selected areas:  Employment status of the civilian noninstitutional population,",
+    fip = str_c("States and selected areas:  Employment status of ",
+                "the civilian noninstitutional population,"),
     state = "...2",
     year = "...3",
     month = "...4",
@@ -262,7 +264,7 @@ analysis_stats <- analysis_stats %>%
 
 state_emp <- state_emp %>%
   unite(date, year, month, sep = "-", remove = TRUE) %>%
-  mutate(date = paste0(date,"-01"),
+  mutate(date = paste0(date, "-01"),
          date = as.Date(date))
 
 weighted_tur <- function(data) {
