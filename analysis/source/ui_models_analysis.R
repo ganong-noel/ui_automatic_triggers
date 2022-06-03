@@ -21,7 +21,8 @@ state_unemp <- read_xlsx("analysis/input/ststdsadata.xlsx")
 
 state_unemp <- state_unemp %>%
   rename(
-    fip = "States and selected areas:  Employment status of the civilian noninstitutional population,",
+    fip = str_c("States and selected areas:  Employment status of",
+                " the civilian noninstitutional population,"),
     state = "...2",
     year = "...3",
     month = "...4",
@@ -42,26 +43,26 @@ update_ur <- function(data) {
 }
 
 call_sahm_data <- function(data) {
-  if(data == "0.5") {
+  if (data == "0.5") {
     sahm_0.5_mod
   } else if (data == "1") {
     sahm_1_mod
   }
 }
 
-filter_sahm_mod_dates <- function(name, data){
+filter_sahm_mod_dates <- function(name, data) {
   sahm_data <- call_sahm_data(data)
-  
+
   stop_dates <- baseline_mod %>%
     filter(state == name, stop_date == 1) %>%
     arrange(date)
-  
+
   first_stop_date <- stop_dates[1, 2]
-  
+
   state_only <- sahm_data %>%
     filter(state == name) %>%
     subset(date >= first_stop_date)
-  
+
   state_only
 }
 
@@ -106,7 +107,7 @@ false_pos_sahm_0.5_ext <- false_positives(sahm_0.5_mod, "6 months")
 dist_plot_pos <- function(data) {
   plot_data <- data %>%
     mutate(excess_unemp = post_rate - pre_rate)
-  
+
   ggplot(data = plot_data, aes(excess_unemp)) +
     geom_histogram(aes(y = stat(width * density)),
                    bins = 30,
@@ -123,7 +124,7 @@ dist_plot_pos <- function(data) {
     # labs(subtitle = "Share of observations") +
     scale_x_continuous(# name = "Excess unemployment in 6 months (p.p.)",
       limits = c(-1.5, 2.5),
-      breaks = c(-1,-0.5, 0, 0.5, 1, 1.5, 2))
+      breaks = c(-1, -0.5, 0, 0.5, 1, 1.5, 2))
 }
 
 dist_plot_baseline_ext <- dist_plot_pos(false_pos_baseline_ext) +
@@ -137,7 +138,7 @@ dist_plot_baseline_ext <- dist_plot_pos(false_pos_baseline_ext) +
             size = 1.7,
             hjust = 1.02,
             color = blues[1],
-            label = "True state U\nrises by < 1%,\n55 state-months")+
+            label = "True state U\nrises by < 1%,\n55 state-months") +
   geom_text(x = 1.22,
             y = 0.155,
             size = 1.7,
@@ -147,15 +148,15 @@ dist_plot_baseline_ext <- dist_plot_pos(false_pos_baseline_ext) +
   geom_segment(x = 1.24, y = 0.138,
                xend = 1.75, yend = 0.138,
                lineend = "butt",
-               size = 0.3, 
+               size = 0.3,
                arrow = arrow(length = unit(0.06, "inches")),
                colour = blues[1]) +
   geom_segment(x = 0.79, y = 0.138,
                xend = 0.34, yend = 0.138,
                lineend = "butt",
-               size = 0.3, 
+               size = 0.3,
                arrow = arrow(length = unit(0.06, "inches")),
-               colour = blues[1]) 
+               colour = blues[1])
 
 dist_plot_sahm_1_ext <- dist_plot_pos(false_pos_sahm_1_ext) +
   labs(title = "State Sahm Trigger (1)") +
@@ -167,7 +168,7 @@ dist_plot_sahm_1_ext <- dist_plot_pos(false_pos_sahm_1_ext) +
             size = 1.7,
             hjust = 1.13,
             color = blues[1],
-            label = "True state U\nrises by < 1%,\n136 state-months")+
+            label = "True state U\nrises by < 1%,\n136 state-months") +
   geom_text(x = 1,
             y = 0.121,
             size = 1.7,
@@ -177,15 +178,15 @@ dist_plot_sahm_1_ext <- dist_plot_pos(false_pos_sahm_1_ext) +
   geom_segment(x = 1.13, y = 0.108,
                xend = 1.73, yend = 0.108,
                lineend = "butt",
-               size = 0.3, 
+               size = 0.3,
                arrow = arrow(length = unit(0.06, "inches")),
                colour = blues[1]) +
   geom_segment(x = 0.87, y = 0.108,
                xend = .27, yend = 0.108,
                lineend = "butt",
-               size = 0.3, 
+               size = 0.3,
                arrow = arrow(length = unit(0.06, "inches")),
-               colour = blues[1]) 
+               colour = blues[1])
 
 dist_plot_sahm_0.5_ext <- dist_plot_pos(false_pos_sahm_0.5_ext) +
   labs(title = "State Sahm Trigger (0.5)") +
@@ -197,7 +198,7 @@ dist_plot_sahm_0.5_ext <- dist_plot_pos(false_pos_sahm_0.5_ext) +
             size = 1.7,
             hjust = 1.13,
             color = blues[1],
-            label = "True state U\nrises by < 1%,\n352 state-months")+
+            label = "True state U\nrises by < 1%,\n352 state-months") +
   geom_text(x = 1,
             y = 0.189,
             size = 1.7,
@@ -207,15 +208,15 @@ dist_plot_sahm_0.5_ext <- dist_plot_pos(false_pos_sahm_0.5_ext) +
   geom_segment(x = 1.13, y = 0.1693,
                xend = 1.75, yend = 0.1693,
                lineend = "butt",
-               size = 0.3, 
+               size = 0.3,
                arrow = arrow(length = unit(0.06, "inches")),
                colour = blues[1]) +
   geom_segment(x = 0.87, y = 0.1693,
                xend = .25, yend = 0.1693,
                lineend = "butt",
-               size = 0.3, 
+               size = 0.3,
                arrow = arrow(length = unit(0.06, "inches")),
-               colour = blues[1]) 
+               colour = blues[1])
 
 # DIST PLOT PANNEL -----------------------------------------------
 
@@ -295,7 +296,7 @@ plotting_data <- output_table %>%
   )
 
 hist_v_over_u <- as.numeric(plotting_data[19, 7])
-hist_prop_claimed <- as.numeric(1- as.numeric(plotting_data[19, 6]))
+hist_prop_claimed <- as.numeric(1 - as.numeric(plotting_data[19, 6]))
 
 plotting_data %>%
   filter(!is.na(sahm_wks)) %>%
@@ -348,7 +349,7 @@ plotting_data %>%
     axis.text.x = element_text(size = 7),
     axis.text.y = element_text(size = 7),
     legend.text = element_text(size = 7),
-    legend.margin = margin(-0.8,0,0,-1, unit="lines")
+    legend.margin = margin(-0.8, 0, 0, -1, unit = "lines")
   ) +
   labs(
     fill = element_blank(),
@@ -366,6 +367,6 @@ plotting_data %>%
 ggsave(
   "analysis/release/prop_wks_claimed_v_over_u.png",
   width = 2.625,
-  height= 3.2,
+  height = 3.2,
   unit = "in"
 )

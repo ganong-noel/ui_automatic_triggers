@@ -17,7 +17,7 @@ state_lab <- read_xlsx("analysis/input/ststdsadata.xlsx")
 
 # CLEANING DATA -----------------------------------------------------------
 
-sahm$DATE <- gsub('.{3}$', '', sahm$DATE)
+sahm$DATE <- gsub(".{3}$", "", sahm$DATE)
 sahm <- separate(sahm, DATE, c("year", "month"), sep = "-") %>%
   rename(sahm = SAHMREALTIME)
 
@@ -32,7 +32,8 @@ state_emp <- separate(state_emp, date, c("month", "day", "year"), sep = "/") %>%
          month = if_else(nchar(month) == 1, str_c(0, month), month))
 
 state_lab <- state_lab %>%
-  rename(fip = "States and selected areas:  Employment status of the civilian noninstitutional population,",
+  rename(fip = str_c("States and selected areas:  Employment status of the",
+                     " civilian noninstitutional population,"),
          state = "...2",
          year = "...3",
          month = "...4",
@@ -42,7 +43,7 @@ state_lab <- state_lab %>%
          nchar(fip) == 2) %>%
   mutate(employed = as.numeric(employed),
          lf = as.numeric(lf),
-         epop = employed/lf) %>%
+         epop = employed / lf) %>%
   select(state, year, month, epop)
 
 state_list <- state_lab %>%
@@ -63,7 +64,7 @@ model_baseline <- function(name, number) {
       unemp_rate = as.numeric(unemp_rate),
       trigger_on = sahm_trigger
     )
-  
+
   for (i in 2:nrow(one_state)) {
     one_state$trigger_on[i] <- if_else(
       one_state$trigger_on[i] == 1 |
@@ -75,26 +76,26 @@ model_baseline <- function(name, number) {
     )
     thresholds <- one_state
   }
-  
+
   one_state
   thresholds <- thresholds %>%
     mutate(
-      start_date = if_else(trigger_on == 1 & lag(trigger_on) == 0 , 1, 0),
+      start_date = if_else(trigger_on == 1 & lag(trigger_on) == 0, 1, 0),
       stop_date = if_else(trigger_on == 0 &
                             lag(trigger_on) == 1, 1, 0)
     ) %>%
-    filter (start_date == 1 | stop_date == 1) %>%
+    filter(start_date == 1 | stop_date == 1) %>%
     unite(date, year, month, sep = "-", remove = TRUE) %>%
     select(state, date, unemp_rate, sahm, start_date, stop_date)
-  
+
   thresholds <- if (is.na(thresholds$stop_date[1])) {
     thresholds
   } else if (thresholds$stop_date[1] == 1) {
-    thresholds[-1,]
+    thresholds[-1, ]
   } else {
     thresholds
   }
-  
+
   thresholds
 }
 
@@ -147,12 +148,12 @@ model_state_sahm <- function(name, choose_state_sahm) {
                       as.numeric(lag(unemp_rate, n = 2)) +
                       unemp_rate) / 3
     )
-  
+
   for (i in nrow(one_state)) {
     mins <- (lag(runmin(one_state$unemp_rate, 12, align = "right")))
     one_state <- cbind(one_state, mins)
   }
-  
+
   one_state <- one_state %>%
     mutate(
       sahm_state = moving_avg - mins,
@@ -162,7 +163,7 @@ model_state_sahm <- function(name, choose_state_sahm) {
     ) %>%
     slice(-c(1:12)) %>%
     select(!c(moving_avg, mins))
-  
+
   for (i in 2:nrow(one_state)) {
     one_state$trigger_on[i] <- if_else(
       one_state$trigger_on[i] == 1 |
@@ -174,14 +175,14 @@ model_state_sahm <- function(name, choose_state_sahm) {
     )
     thresholds <- one_state
   }
-  
+
   thresholds <- thresholds %>%
     mutate(
-      start_date = if_else(trigger_on == 1 & lag(trigger_on) == 0 , 1, 0),
+      start_date = if_else(trigger_on == 1 & lag(trigger_on) == 0, 1, 0),
       stop_date = if_else(trigger_on == 0 &
                             lag(trigger_on) == 1, 1, 0)
     ) %>%
-    filter (start_date == 1 | stop_date == 1) %>%
+    filter(start_date == 1 | stop_date == 1) %>%
     unite(date, year, month, sep = "-", remove = TRUE) %>%
     select(state,
            date,
@@ -190,24 +191,28 @@ model_state_sahm <- function(name, choose_state_sahm) {
            sahm_state,
            start_date,
            stop_date)
-  
+
   thresholds <- if (is.na(thresholds$stop_date[1])) {
     thresholds
   } else if (thresholds$stop_date[1] == 1) {
-    thresholds[-1,]
+    thresholds[-1, ]
   } else {
     thresholds
   }
-  
+
   thresholds
 }
 
 # FINDING STATE SAHM MODEL DATES ------------------------------------------
 
-all_state_sahm_1 <- (lapply(state_list$name, choose_state_sahm = 1, model_state_sahm))
+all_state_sahm_1 <- (lapply(state_list$name,
+                            choose_state_sahm = 1,
+                            model_state_sahm))
 all_state_sahm_1 <- as.tibble(do.call(rbind, all_state_sahm_1))
 
-all_state_sahm_0.5 <- (lapply(state_list$name, choose_state_sahm = 0.5, model_state_sahm))
+all_state_sahm_0.5 <- (lapply(state_list$name,
+                              choose_state_sahm = 0.5,
+                              model_state_sahm))
 all_state_sahm_0.5 <- as.tibble(do.call(rbind, all_state_sahm_0.5))
 
 first_stop <- function(name) {

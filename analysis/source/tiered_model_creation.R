@@ -17,12 +17,14 @@ sahm <- read.csv("analysis/input/SAHMREALTIME.csv")
 state_emp <- read.csv("analysis/input/realtime-TUR.csv")
 state_lab <- read_xlsx("analysis/input/ststdsadata.xlsx")
 state_jolts_raw <- read_dta("analysis/input/state-jolts.dta")
-raw_sim_unemp <- read_dta("analysis/input/simulation_covid_fullcps_collapsed_states.dta")
+raw_sim_unemp <- read_dta(str_c("analysis/input/",
+                                "simulation_covid_fullcps_collapsed_states.dta")
+                          )
 historical_data <- read_dta("analysis/input/crck_ui_macro_dataset_weekly.dta")
 
 # CLEANING UNEMPLOYMENT DATA ----------------------------------------------
 
-sahm$DATE <- gsub('.{3}$', '', sahm$DATE)
+sahm$DATE <- gsub(".{3}$", "", sahm$DATE)
 sahm <- separate(sahm, DATE, c("year", "month"), sep = "-") %>%
   rename(sahm = SAHMREALTIME)
 
@@ -39,7 +41,8 @@ state_emp <-
 
 state_lab <- state_lab %>%
   rename(
-    fip = "States and selected areas:  Employment status of the civilian noninstitutional population,",
+    fip = str_c("States and selected areas:  Employment status of the",
+                " civilian noninstitutional population,"),
     state = "...2",
     year = "...3",
     month = "...4",
@@ -106,7 +109,7 @@ threshold_dates <- function(name, unemp_threshold, weeks) {
     unite(date, year, month, sep = "-", remove = TRUE) %>%
     mutate(date = ym(date)) %>%
     pad()
-  
+
   for (i in 2:nrow(one_state)) {
     if (is.na(one_state$state[i]) &
         !is.na(one_state$state[i - 1]) &
@@ -166,7 +169,7 @@ threshold_dates <- function(name, unemp_threshold, weeks) {
         if_else(one_state$unemp_rate[i] > unemp_threshold, 1, 0)
     }
   }
-  
+
   one_state <- one_state %>%
     mutate(
       sahm_wks_on = if_else(sahm_trig == 1,
@@ -175,7 +178,7 @@ threshold_dates <- function(name, unemp_threshold, weeks) {
                             0),
       sahm_wks_on = if_else(is.na(sahm_wks_on), cumsum(sahm_trig), sahm_wks_on)
     )
-  
+
   one_state <- one_state %>%
     mutate(trig_on = if_else(unemp_trig == 1 |
                                (sahm_wks_on != 0 &
@@ -193,28 +196,28 @@ one_tier <- function(name, sahm_wks,
                      t1_landing_wks) {
   sim_one_state <- sim_unemp %>%
     filter(state == name)
-  
+
   thresholds_one_state <- threshold_dates(name, t1_ur, sahm_wks) %>%
     mutate(tier = if_else(as.double(unemp_rate) > t1_ur, 1, 0))
-  
+
   one_state <- left_join(sim_one_state, thresholds_one_state,
                          by = c("date", "state")) %>%
     filter(!is.na(trig_on)) %>%
     subset(date >= as.Date("2001-06-01"))
-  
+
   drop_tier_wks_min <- function(weeks_used,
                                 higher_tier_landing_wks,
                                 higher_tier_wks) {
     round(weeks_used + base::min(higher_tier_landing_wks,
                                  higher_tier_wks - weeks_used))
   }
-  
+
   drop_tier_wks_max <- function(weeks_used,
                                 higher_tier_landing_wks,
                                 lower_tier_wks) {
     max(weeks_used + higher_tier_landing_wks, lower_tier_wks)
   }
-  
+
   wks_used_max_wks <- function(input_date, input_duration) {
     subset_dates <- thresholds_one_state %>%
       subset(date <= as.Date(input_date)) %>%
@@ -222,7 +225,7 @@ one_tier <- function(name, sahm_wks,
                months(as.integer((input_duration - 26) / 4.33))) %>%
       mutate(weeks_used = 0,
              max_wks = 0)
-    
+
     subset_dates$max_wks[1] <- if (subset_dates$tier[1] == 1) {
       t1_wks
     } else if (subset_dates$trig_on[1] == 1) {
@@ -230,7 +233,7 @@ one_tier <- function(name, sahm_wks,
     } else if (subset_dates$tier[1] == 0) {
       0
     }
-    
+
     if (nrow(subset_dates) > 1) {
       for (i in 2:nrow(subset_dates)) {
         subset_dates$weeks_used[i] <-
@@ -239,7 +242,7 @@ one_tier <- function(name, sahm_wks,
             subset_dates$weeks_used[i - 1] + 4.33,
             subset_dates$weeks_used[i - 1]
           )
-        
+
         subset_dates$max_wks[i] <-
           if (subset_dates$trig_on[i] == 1 &
               subset_dates$trig_on[i - 1] == 0 &
@@ -249,7 +252,8 @@ one_tier <- function(name, sahm_wks,
                     sahm_wks)
           } else if (subset_dates$tier[i] == 0 &
                      subset_dates$tier[i - 1] == 1) {
-            drop_tier_wks_min(subset_dates$weeks_used[i], t1_landing_wks, t1_wks)
+            drop_tier_wks_min(subset_dates$weeks_used[i],
+                              t1_landing_wks, t1_wks)
           } else if (subset_dates$tier[i] == 0) {
             subset_dates$max_wks[i - 1]
           } else if (subset_dates$trig_on[i] == 0) {
@@ -261,12 +265,12 @@ one_tier <- function(name, sahm_wks,
           }
       }
     }
-    
+
     tail(subset_dates, 1) %>%
       mutate(duration = input_duration,
              weeks_used = round(weeks_used))
   }
-  
+
   one_state <-
     map2_dfr(one_state$date, one_state$duration, wks_used_max_wks)
 }
@@ -357,32 +361,32 @@ three_tier <- function(name, sahm_wks,
                        t3_landing_wks) {
   sim_one_state <- sim_unemp %>%
     filter(state == name)
-  
+
   thresholds_one_state <- threshold_dates(name, t1_ur, sahm_wks) %>%
     mutate(tier = if_else(as.double(unemp_rate) > t3_ur,
                           3,
                           if_else(unemp_rate > t2_ur,
                                   2, if_else(unemp_rate > t1_ur,
                                              1, 0))))
-  
+
   one_state <- left_join(sim_one_state, thresholds_one_state,
                          by = c("date", "state")) %>%
     filter(!is.na(trig_on)) %>%
     subset(date >= as.Date("2001-06-01"))
-  
+
   drop_tier_wks_min <- function(weeks_used,
                                 higher_tier_landing_wks,
                                 higher_tier_wks) {
     round(weeks_used + base::min(higher_tier_landing_wks,
                                  higher_tier_wks - weeks_used))
   }
-  
+
   drop_tier_wks_max <- function(weeks_used,
                                 higher_tier_landing_wks,
                                 lower_tier_wks) {
     max(weeks_used + higher_tier_landing_wks, lower_tier_wks)
   }
-  
+
   wks_used_max_wks <- function(input_date, input_duration) {
     subset_dates <- thresholds_one_state %>%
       subset(date <= as.Date(input_date)) %>%
@@ -390,7 +394,7 @@ three_tier <- function(name, sahm_wks,
                months(as.integer((input_duration - 26) / 4.33))) %>%
       mutate(weeks_used = 0,
              max_wks = 0)
-    
+
     subset_dates$max_wks[1] <- if (subset_dates$tier[1] == 1) {
       t1_wks
     } else if (subset_dates$tier[1] == 2) {
@@ -402,7 +406,7 @@ three_tier <- function(name, sahm_wks,
     } else if (subset_dates$tier[1] == 0) {
       0
     }
-    
+
     if (nrow(subset_dates) > 1) {
       for (i in 2:nrow(subset_dates)) {
         subset_dates$weeks_used[i] <-
@@ -411,7 +415,7 @@ three_tier <- function(name, sahm_wks,
             subset_dates$weeks_used[i - 1] + 4.33,
             subset_dates$weeks_used[i - 1]
           )
-        
+
         subset_dates$max_wks[i] <-
           if (subset_dates$trig_on[i] == 1 &
               subset_dates$trig_on[i - 1] == 0 &
@@ -422,19 +426,22 @@ three_tier <- function(name, sahm_wks,
           } else if (subset_dates$tier[i] == 0 &
                      subset_dates$tier[i - 1] != 0) {
             if (subset_dates$tier[i - 1] == 3) {
-              drop_tier_wks_min(subset_dates$weeks_used[i], t3_landing_wks, t3_wks)
+              drop_tier_wks_min(subset_dates$weeks_used[i],
+                                t3_landing_wks, t3_wks)
             } else if (subset_dates$tier[i - 1] == 2 &
                        round(subset_dates$weeks_used[i]) >= t2_wks) {
               if_else(
                 subset_dates$max_wks[i - 1] > t2_wks,
                 subset_dates$max_wks[i - 1],
-                drop_tier_wks_min(subset_dates$weeks_used[i], t2_landing_wks, t2_wks)
+                drop_tier_wks_min(subset_dates$weeks_used[i],
+                                  t2_landing_wks, t2_wks)
               )
             } else if (subset_dates$tier[i - 1] == 1) {
               if_else(
                 subset_dates$max_wks[i - 1] > t1_wks,
                 subset_dates$max_wks[i - 1],
-                drop_tier_wks_min(subset_dates$weeks_used[i], t1_landing_wks, t1_wks)
+                drop_tier_wks_min(subset_dates$weeks_used[i],
+                                  t1_landing_wks, t1_wks)
               )
             }
           } else if (subset_dates$tier[i] == 0) {
@@ -485,12 +492,12 @@ three_tier <- function(name, sahm_wks,
           }
       }
     }
-    
+
     tail(subset_dates, 1) %>%
       mutate(duration = input_duration,
              weeks_used = round(weeks_used))
   }
-  
+
   one_state <-
     map2_dfr(one_state$date, one_state$duration, wks_used_max_wks)
 }
@@ -619,7 +626,7 @@ four_tier <- function(name, sahm_wks,
                       t4_landing_wks) {
   sim_one_state <- sim_unemp %>%
     filter(state == name)
-  
+
   thresholds_one_state <- threshold_dates(name, t1_ur, sahm_wks) %>%
     mutate(tier = if_else(as.double(unemp_rate) > t4_ur,
                           4,
@@ -628,26 +635,26 @@ four_tier <- function(name, sahm_wks,
                                   if_else(unemp_rate > t2_ur,
                                           2, if_else(unemp_rate > t1_ur,
                                                      1, 0)))))
-  
+
   one_state <- left_join(sim_one_state, thresholds_one_state,
                          by = c("date", "state")) %>%
     filter(!is.na(trig_on)) %>%
     subset(date >= as.Date("2001-06-01"))
-  
+
   drop_tier_wks_min <- function(weeks_used,
                                 higher_tier_landing_wks,
                                 higher_tier_wks) {
     round(weeks_used + base::min(higher_tier_landing_wks,
                                  higher_tier_wks - weeks_used))
   }
-  
+
   drop_tier_wks_max <- function(weeks_used,
                                 higher_tier_landing_wks,
                                 lower_tier_wks) {
     max(round(weeks_used + higher_tier_landing_wks),
         lower_tier_wks)
   }
-  
+
   wks_used_max_wks <- function(input_date, input_duration) {
     subset_dates <- thresholds_one_state %>%
       subset(date <= as.Date(input_date)) %>%
@@ -655,7 +662,7 @@ four_tier <- function(name, sahm_wks,
                months(as.integer((input_duration - 26) / 4.33))) %>%
       mutate(weeks_used = 0,
              max_wks = 0)
-    
+
     subset_dates$max_wks[1] <- if (subset_dates$tier[1] == 1) {
       t1_wks
     } else if (subset_dates$tier[1] == 2) {
@@ -669,7 +676,7 @@ four_tier <- function(name, sahm_wks,
     } else if (subset_dates$tier[1] == 0) {
       0
     }
-    
+
     if (nrow(subset_dates) > 1) {
       for (i in 2:nrow(subset_dates)) {
         subset_dates$weeks_used[i] <-
@@ -678,7 +685,7 @@ four_tier <- function(name, sahm_wks,
             subset_dates$weeks_used[i - 1] + 4.33,
             subset_dates$weeks_used[i - 1]
           )
-        
+
         subset_dates$max_wks[i] <-
           if (subset_dates$trig_on[i] == 1 &
               subset_dates$trig_on[i - 1] == 0 &
@@ -689,25 +696,29 @@ four_tier <- function(name, sahm_wks,
           } else if (subset_dates$tier[i] == 0 &
                      subset_dates$tier[i - 1] != 0) {
             if (subset_dates$tier[i - 1] == 4) {
-              drop_tier_wks_min(subset_dates$weeks_used[i], t4_landing_wks, t4_wks)
+              drop_tier_wks_min(subset_dates$weeks_used[i],
+                                t4_landing_wks, t4_wks)
             } else if (subset_dates$tier[i - 1] == 3) {
               if_else(
                 subset_dates$max_wks[i - 1] > t3_wks,
                 subset_dates$max_wks[i - 1],
-                drop_tier_wks_min(subset_dates$weeks_used[i], t3_landing_wks, t3_wks)
+                drop_tier_wks_min(subset_dates$weeks_used[i],
+                                  t3_landing_wks, t3_wks)
               )
             } else if (subset_dates$tier[i - 1] == 2 &
                        round(subset_dates$weeks_used[i]) >= t2_wks) {
               if_else(
                 subset_dates$max_wks[i - 1] > t2_wks,
                 subset_dates$max_wks[i - 1],
-                drop_tier_wks_min(subset_dates$weeks_used[i], t2_landing_wks, t2_wks)
+                drop_tier_wks_min(subset_dates$weeks_used[i],
+                                  t2_landing_wks, t2_wks)
               )
             } else if (subset_dates$tier[i - 1] == 1) {
               if_else(
                 subset_dates$max_wks[i - 1] > t1_wks,
                 subset_dates$max_wks[i - 1],
-                drop_tier_wks_min(subset_dates$weeks_used[i], t1_landing_wks, t1_wks)
+                drop_tier_wks_min(subset_dates$weeks_used[i],
+                                  t1_landing_wks, t1_wks)
               )
             }
           } else if (subset_dates$tier[i] == 0) {
@@ -792,12 +803,12 @@ four_tier <- function(name, sahm_wks,
           }
       }
     }
-    
+
     tail(subset_dates, 1) %>%
       mutate(duration = input_duration,
              weeks_used = round(weeks_used))
   }
-  
+
   one_state <-
     map2_dfr(one_state$date, one_state$duration, wks_used_max_wks)
 }
@@ -946,7 +957,7 @@ historical_model <- function(name) {
   one_state <- sim_unemp %>%
     filter(state == name) %>%
     subset(date >= as.Date("2001-06-01"))
-  
+
   one_state_hist_wks <- historical_wks %>%
     filter(state == name) %>%
     subset(date >= as.Date("2001-05-15")) %>%
@@ -955,11 +966,11 @@ historical_model <- function(name) {
       state = name,
       wks_available = NA
     ))
-  
+
   padded_one_state_hist_wks <- one_state_hist_wks %>%
     pad(interval = "day") %>%
     mutate(state = name)
-  
+
   for (i in 2:nrow(padded_one_state_hist_wks)) {
     padded_one_state_hist_wks$wks_available[i] <-
       ifelse(
@@ -968,11 +979,11 @@ historical_model <- function(name) {
         padded_one_state_hist_wks$wks_available[i]
       )
   }
-  
+
   joined_one_state <-
     left_join(one_state, padded_one_state_hist_wks) %>%
     filter(wks_available != 0)
-  
+
   wks_used_max_wks <- function(input_date, input_duration) {
     subset_dates <-  padded_one_state_hist_wks %>%
       subset(date <= as.Date(input_date)) %>%
@@ -984,21 +995,26 @@ historical_model <- function(name) {
         keep_date = 1
       ) %>%
       select(!wks_available)
-    
+
     if (nrow(subset_dates) > 1) {
       for (i in 2:(nrow(subset_dates) - 1)) {
-        subset_dates$keep_date[i] =  if_else(subset_dates$days_available[i] !=
-                                               subset_dates$days_available[i - 1],
-                                             1, 0)
+        subset_dates$keep_date[i] <-
+          if_else(
+            subset_dates$days_available[i] !=
+              subset_dates$days_available[i - 1],
+            1,
+            0)
       }
-      
+
       subset_dates <- subset_dates %>%
         filter(keep_date == 1)
-      
+
       for (i in 2:nrow(subset_dates)) {
         subset_dates$days_used[i] <-
           if_else(
-            round(subset_dates$days_used[i - 1]) < subset_dates$days_available[i - 1],
+            round(
+              subset_dates$days_used[i - 1]) <
+              subset_dates$days_available[i - 1],
             subset_dates$days_used[i - 1] +
               difftime(subset_dates$date[i], subset_dates$date[i - 1],
                        unit = "days"),
@@ -1006,17 +1022,17 @@ historical_model <- function(name) {
           )
       }
     }
-    
+
     tail(subset_dates, 1) %>%
       select(!keep_date) %>%
       mutate(duration = input_duration)
   }
-  
+
   joined_one_state <-
     map2_dfr(joined_one_state$date,
              joined_one_state$duration,
              wks_used_max_wks)
-  
+
   one_state %>%
     select(date, state, duration) %>%
     left_join(joined_one_state) %>%
